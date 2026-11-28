@@ -1,6 +1,8 @@
 # Validating files in the CLI argument layer
 
-This project does not use `Argument.FileSchema` (or `FileParse` / `FileText`) to read, parse and validate input files such as the Preferences file. File handling stays in the command handler.
+This project does not use `Argument.FileSchema` (or `FileParse` / `FileText`) in helpers whose main function is to validate a file against a schema, such as `validate-preferences`. For those helpers, reading, parsing and validating the file stays in the command handler.
+
+Helpers that merely consume a file and can assume it is already valid may still use the CLI argument layer to load it. That is a different case and is not ruled out.
 
 ## Why this is out of scope
 
@@ -11,6 +13,8 @@ This project does not use `Argument.FileSchema` (or `FileParse` / `FileText`) to
 - read/parse/validate logic moves out of the handler into the CLI layer, away from the handler-level tests.
 
 A prototype confirmed this: branch `prototype/file-schema-102`, `prototypes/PROTOTYPE-file-schema.ts`.
+
+This reasoning applies because the validation errors are the helper's output. A helper that assumes a valid file has no use for distinct validation exit codes or tailored messages, so a generic usage error is acceptable there.
 
 `Argument.File` on its own (help text and completion, no decoding) was not evaluated and is not covered by this decision.
 
