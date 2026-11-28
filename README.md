@@ -2,11 +2,12 @@
 
 A CLI of Gleneseo helper commands, each exposed as a subcommand. Run `gleneseo-helpers --help` to list them.
 
-| Subcommand     | Description                                                                              |
-| -------------- | ---------------------------------------------------------------------------------------- |
-| `job-postings` | Downloads a Google Sheet of job postings, sorts it, and prints it to standard out as CSV |
-| `gmail`        | Downloads inbox emails into SQLite and prints them to standard out as a table            |
-| `help`         | Shows the application help                                                               |
+| Subcommand             | Description                                                                              |
+| ---------------------- | ---------------------------------------------------------------------------------------- |
+| `job-postings`         | Downloads a Google Sheet of job postings, sorts it, and prints it to standard out as CSV |
+| `gmail`                | Downloads inbox emails into SQLite and prints them to standard out as a table            |
+| `validate-preferences` | Checks that the Preferences file at the given path exists and contains valid JSON        |
+| `help`                 | Shows the application help                                                               |
 
 ## Requirements
 
@@ -139,6 +140,20 @@ Saved files have `From`, `To`, `Subject`, `Received`, and `Gmail-Message-ID` hea
 
 Each file is named `<Gmail message ID> - <subject>.txt` (or `.html`), e.g. `18c3f2a9b7d4e1f0 - Hello.txt`, with `<subject>` cleaned and truncated as above and shown as `(no subject)` when nothing usable remains. The message ID makes every name unique, so two emails that share a subject get distinct names with no extra suffix. Because Gmail doesn't guarantee its IDs increase over time, files list roughly oldest first but not exactly. Re-running into a folder from an earlier version leaves those older files in place (nothing is renamed or deleted), so save into a fresh output directory to avoid mixing the two naming schemes.
 
+### `validate-preferences`
+
+Reads the Preferences file at the given path and checks that it exists and contains valid JSON, printing a success message when it does. The path is a required argument and has no well-known location, so it must always be given.
+
+```sh
+npm start -- validate-preferences ./preferences.json
+```
+
+A missing or unreadable file fails with `PreferencesFileReadError` (exit `70`), and a file that is not valid JSON fails with `PreferencesFileParseError` (exit `71`); see [Exit codes](#exit-codes). Pass `--quiet`/`-q` to suppress the banner and the success message, leaving only error output.
+
+| Flag            | Description                            | Default |
+| --------------- | -------------------------------------- | ------- |
+| `--quiet`, `-q` | Suppress the banner and success output | `false` |
+
 ### Running the compiled CLI
 
 `npm start` runs the CLI from source via `tsx`, with no build step. To run the compiled output instead:
@@ -187,6 +202,8 @@ Each domain error a subcommand can fail with exits with its own code, so scripts
 | `52`      | `GmailFetchError`              | Fetching or parsing a message failed.                              |
 | `60`      | `EmailStoreError`              | Reading or writing the SQLite email database failed.               |
 | `61`      | `EmailFilesWriteError`         | Writing the email files failed.                                    |
+| `70`      | `PreferencesFileReadError`     | The Preferences file does not exist or could not be read.          |
+| `71`      | `PreferencesFileParseError`    | The Preferences file does not contain valid JSON.                  |
 | `130`     | —                              | Interrupted (e.g. `Ctrl+C`).                                       |
 
 A request that exceeds `--timeout` fails with the same error and exit code its underlying call would otherwise use (e.g. a folder search that times out is a `FolderSearchError`, exit `10`, and a Gmail message fetch that times out is a `GmailFetchError`, exit `52`) — timing out doesn't introduce a separate code. The same holds for the `gmail` browser consent page's fixed 5-minute limit, which fails with `GmailAuthError`, exit `50`.
